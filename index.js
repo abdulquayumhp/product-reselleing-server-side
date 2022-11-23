@@ -5,7 +5,7 @@ require("dotenv").config();
 // const jwt = require("jsonwebtoken");
 
 // mongodb
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 app.use(cors());
 app.use(express.json());
@@ -27,6 +27,22 @@ async function mongodbConnect() {
     const furnitureResellingProduct = client
       .db("furnitureResell")
       .collection("furnitureResellProduct");
+
+    //get all furnitureReselling
+
+    app.get("/ResellingFurniture", async (req, res) => {
+      const query = {};
+      const option = await furnitureResellingProduct.find().toArray();
+      //   console.log(option);
+      res.send(option);
+    });
+
+    app.get("/home/category/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const resellerDetails = await furnitureResellingProduct.findOne(query);
+      res.send(resellerDetails);
+    });
   } finally {
   }
 }
