@@ -27,21 +27,46 @@ async function mongodbConnect() {
     const furnitureResellingProduct = client
       .db("furnitureResell")
       .collection("furnitureResellProduct");
+    const furnitureResellingCategory = client
+      .db("furnitureResell")
+      .collection("ResellCategory");
+    const furnitureResellingBooking = client
+      .db("furnitureResell")
+      .collection("ResellBooking");
+
+    // const user = { name: "abudl" };
+
+    // const box = furnitureResellingCategory.insertOne(user);
 
     //get all furnitureReselling
 
     app.get("/ResellingFurniture", async (req, res) => {
       const query = {};
-      const option = await furnitureResellingProduct.find().toArray();
+      const option = await furnitureResellingCategory.find().toArray();
       //   console.log(option);
       res.send(option);
     });
 
+    // all furniture  data
     app.get("/home/category/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: ObjectId(id) };
-      const resellerDetails = await furnitureResellingProduct.findOne(query);
-      res.send(resellerDetails);
+      const query = { category: id };
+      const resellerAllCategory = await furnitureResellingProduct
+        .find(query)
+        .toArray();
+      res.send(resellerAllCategory);
+    });
+
+    // all booking fatch data
+    app.post("/modalData", async (req, res) => {
+      const modalData = req.body;
+      // console.log("helo", modalData);
+      // const query = {
+      //   email: modalData.user,
+      // };
+      // console.log("email", query);
+      const result = await furnitureResellingBooking.insertOne(modalData);
+      res.send(result);
     });
   } finally {
   }
