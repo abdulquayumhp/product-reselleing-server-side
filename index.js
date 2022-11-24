@@ -82,12 +82,12 @@ async function mongodbConnect() {
       res.send(option);
     });
     // report
-    app.post("/ReportData", async (req, res) => {
-      const ReportData = req.body;
-      const result = await furnitureResellingReport.insertOne(ReportData);
-      console.log(result);
-      res.send(result);
-    });
+    // app.post("/ReportData", async (req, res) => {
+    //   const ReportData = req.body;
+    //   const result = await furnitureResellingReport.insertOne(ReportData);
+    //   console.log(result);
+    //   res.send(result);
+    // });
   } finally {
   }
 }
