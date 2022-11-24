@@ -44,6 +44,11 @@ async function mongodbConnect() {
       .db("furnitureResell")
       .collection("ResellReport");
 
+    //all user
+    const furnitureResellingAllUser = client
+      .db("furnitureResell")
+      .collection("ResellAllUser");
+
     // const user = { name: "abudl" };
 
     // const box = furnitureResellingCategory.insertOne(user);
@@ -82,12 +87,20 @@ async function mongodbConnect() {
       res.send(option);
     });
     // report
-    // app.post("/ReportData", async (req, res) => {
-    //   const ReportData = req.body;
-    //   const result = await furnitureResellingReport.insertOne(ReportData);
-    //   console.log(result);
-    //   res.send(result);
-    // });
+    app.post("/ReportData", async (req, res) => {
+      const ReportData = req.body;
+      const result = await furnitureResellingReport.insertOne(ReportData);
+      console.log(result);
+      res.send(result);
+    });
+    // all user
+    app.post("/allUser", async (req, res) => {
+      const allUser = req.body;
+      // console.log(allUser);
+      const result = await furnitureResellingAllUser.insertOne(allUser);
+      // console.log(result);
+      res.send(result);
+    });
   } finally {
   }
 }
