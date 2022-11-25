@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 require("dotenv").config();
-// const jwt = require("jsonwebtoken");
+const jwt = require("jsonwebtoken");
 
 // mongodb
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -53,6 +53,25 @@ async function mongodbConnect() {
 
     // const box = furnitureResellingCategory.insertOne(user);
 
+    // jwt token verify
+
+    function verificationJWT(req, res, next) {
+      const header = req.headers.authorization;
+      // console.log(header);
+      if (!header) {
+        return res.status(401).send("unauthorize access");
+      }
+      const token = header.split(" ")[1];
+      // console.log(token);
+      jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+        if (err) {
+          return res.status(403).send({ message: "forbidden access" });
+        }
+        req.decoded = decoded;
+        next();
+      });
+    }
+
     //get all furnitureReselling
 
     app.get("/ResellingFurniture", async (req, res) => {
@@ -77,7 +96,7 @@ async function mongodbConnect() {
     // booking
     app.post("/modalData", async (req, res) => {
       const modalData = req.body;
-      console.log("helo", modalData);
+      // console.log("helo", modalData);
 
       const match = {
         user: modalData.user,
@@ -100,7 +119,7 @@ async function mongodbConnect() {
       }
 
       const option = await furnitureResellingBooking.insertOne(modalData);
-      console.log("option", option);
+      // console.log("option", option);
       res.send(option);
     });
     // report
@@ -113,14 +132,14 @@ async function mongodbConnect() {
     // all user
     app.post("/allUser", async (req, res) => {
       const allUser = req.body;
-      // console.log(allUser);
+
       const result = await furnitureResellingAllUser.insertOne(allUser);
       // console.log(result);
       res.send(result);
     });
 
     // resell all  User
-    app.get("/ResellAllUser", async (req, res) => {
+    app.get("/ResellAllUser", verificationJWT, async (req, res) => {
       const query = {};
       const result = await furnitureResellingAllUser.find(query).toArray();
       res.send(result);
@@ -135,14 +154,47 @@ async function mongodbConnect() {
 
     // get my booking with email
 
-    app.get("/MyBookings", async (req, res) => {
+    app.get("/MyBookings", verificationJWT, async (req, res) => {
       const email = req.query.email;
+      const decodedEmail = req.decoded.email;
+
+      if (email !== decodedEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
       const query = { user: email };
 
       console.log(query);
       const booking = await furnitureResellingBooking.find(query).toArray();
       // console.log(booking);
       res.send(booking);
+    });
+
+    //email to email call for all user role information
+
+    app.get("/emailForGetUser/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+
+      const booking = await furnitureResellingAllUser.find(query).toArray();
+      // console.log(booking);
+      res.send(booking);
+    });
+
+    // jwt token 1 step
+    app.get("/jwt", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const user = await furnitureResellingAllUser.findOne(query);
+
+      if (user) {
+        const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
+          expiresIn: "5h",
+        });
+        return res.send({ accessToken: token });
+      }
+      // console.log(user);
+      res.status(403).send({ accessToken: "" });
     });
   } finally {
   }
