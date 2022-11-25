@@ -101,6 +101,32 @@ async function mongodbConnect() {
       // console.log(result);
       res.send(result);
     });
+
+    // resell all  User
+    app.get("/ResellAllUser", async (req, res) => {
+      const query = {};
+      const result = await furnitureResellingAllUser.find(query).toArray();
+      res.send(result);
+    });
+
+    // resell all  Report
+    app.get("/ResellAllReport", async (req, res) => {
+      const query = {};
+      const result = await furnitureResellingReport.find(query).toArray();
+      res.send(result);
+    });
+
+    // get my booking with email
+
+    app.get("/MyBookings", async (req, res) => {
+      const email = req.query.email;
+      const query = { user: email };
+
+      console.log(query);
+      const booking = await furnitureResellingBooking.find(query).toArray();
+      // console.log(booking);
+      res.send(booking);
+    });
   } finally {
   }
 }
