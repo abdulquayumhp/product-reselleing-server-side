@@ -77,20 +77,37 @@ async function mongodbConnect() {
     // booking
     app.post("/modalData", async (req, res) => {
       const modalData = req.body;
-      // console.log("helo", modalData);
-      // const query = {
-      //   email: modalData.user,
-      // };
-      // console.log("email", query);
+      console.log("helo", modalData);
+
+      const match = {
+        user: modalData.user,
+        picture: modalData.picture,
+        // capacity: modalData.capacity,
+        // name: modalData.name,
+        // original_price: modalData.original_Price,
+        // resale_price: modalData.resale_price,
+      };
+
+      console.log("data match", match);
+      const alreadyBooked = await furnitureResellingBooking
+        .find(match)
+        .toArray();
+      console.log("already add", alreadyBooked);
+
+      if (alreadyBooked.length) {
+        const message = `You Already have a booking on ${match.user} `;
+        return res.send({ acknowledged: false, message });
+      }
+
       const option = await furnitureResellingBooking.insertOne(modalData);
-      // console.log(option);
+      console.log("option", option);
       res.send(option);
     });
     // report
     app.post("/ReportData", async (req, res) => {
       const ReportData = req.body;
       const result = await furnitureResellingReport.insertOne(ReportData);
-      console.log(result);
+      // console.log(result);
       res.send(result);
     });
     // all user
