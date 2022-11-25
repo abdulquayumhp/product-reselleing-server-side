@@ -164,7 +164,7 @@ async function mongodbConnect() {
 
       const query = { user: email };
 
-      console.log(query);
+      // console.log(query);
       const booking = await furnitureResellingBooking.find(query).toArray();
       // console.log(booking);
       res.send(booking);
@@ -179,6 +179,14 @@ async function mongodbConnect() {
       const booking = await furnitureResellingAllUser.find(query).toArray();
       // console.log(booking);
       res.send(booking);
+    });
+
+    app.get("/myBookingDelete/:id", async (req, res) => {
+      const { id } = req.params;
+      // console.log(id);
+      const query = { _id: ObjectId(id) };
+      const result = await furnitureResellingBooking.deleteOne(query);
+      res.send(result);
     });
 
     // jwt token 1 step
