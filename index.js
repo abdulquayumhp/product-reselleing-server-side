@@ -97,10 +97,6 @@ async function mongodbConnect() {
       const match = {
         user: modalData.user,
         picture: modalData.picture,
-        // capacity: modalData.capacity,
-        // name: modalData.name,
-        // original_price: modalData.original_Price,
-        // resale_price: modalData.resale_price,
       };
 
       // console.log("data match", match);
@@ -131,7 +127,7 @@ async function mongodbConnect() {
     app.post("/allUser", async (req, res) => {
       const allUser = req.body;
       const result = await furnitureResellingAllUser.insertOne(allUser);
-      // console.log(result);
+      // console.log("allUser", result);
       res.send(result);
     });
 
@@ -143,8 +139,18 @@ async function mongodbConnect() {
       res.send(result);
     });
 
+    //all buyer
+    app.get("/allBuyer/:role", async (req, res) => {
+      const email = req.params.role;
+      console.log(email);
+      const query = { role: email };
+      const result = await furnitureResellingAllUser.find(query).toArray();
+
+      res.send(result);
+    });
+
     // resell all  Report
-    app.get("/ResellAllReport", async (req, res) => {
+    app.post("/ResellAllReport", async (req, res) => {
       const query = {};
       // console.log(query);
       const result = await furnitureResellingReport.find(query).toArray();
@@ -198,8 +204,10 @@ async function mongodbConnect() {
     // jwt token 1 step
     app.get("/jwt", async (req, res) => {
       const email = req.query.email;
+      // console.log("email", email);
       const query = { email: email };
       const user = await furnitureResellingAllUser.findOne(query);
+      // console.log("user", user);
 
       if (user) {
         const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
@@ -222,3 +230,8 @@ app.get("/", (req, res) => {
 app.listen(port, () => {
   console.log("server is running");
 });
+
+// capacity: modalData.capacity,
+// name: modalData.name,
+// original_price: modalData.original_Price,
+// resale_price: modalData.resale_price,
