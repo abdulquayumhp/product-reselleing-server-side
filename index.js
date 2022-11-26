@@ -118,16 +118,32 @@ async function mongodbConnect() {
     // report
     app.post("/ReportData", async (req, res) => {
       const ReportData = req.body;
+      console.log(ReportData);
       const result = await furnitureResellingReport.insertOne(ReportData);
       // console.log(result);
+      res.send(result);
+    });
+
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const query = { email: user.email };
+      const alreadyUser = await usersCollections.findOne(query);
+      if (alreadyUser) {
+        return res.send({ acknowledged: true });
+      }
+      const result = await usersCollections.insertOne(user);
       res.send(result);
     });
 
     // all user
     app.post("/allUser", async (req, res) => {
       const allUser = req.body;
+      const query = { email: allUser.email };
+      const alreadyUser = await furnitureResellingAllUser.findOne(query);
+      if (alreadyUser) {
+        return res.send({ acknowledged: true });
+      }
       const result = await furnitureResellingAllUser.insertOne(allUser);
-      // console.log("allUser", result);
       res.send(result);
     });
 
@@ -142,6 +158,15 @@ async function mongodbConnect() {
     //all buyer
     app.get("/allBuyer/:role", async (req, res) => {
       const email = req.params.role;
+      // console.log(email);
+      const query = { role: email };
+      const result = await furnitureResellingAllUser.find(query).toArray();
+
+      res.send(result);
+    });
+    //all seller
+    app.get("/allSeller/:role", async (req, res) => {
+      const email = req.params.role;
       console.log(email);
       const query = { role: email };
       const result = await furnitureResellingAllUser.find(query).toArray();
@@ -150,9 +175,9 @@ async function mongodbConnect() {
     });
 
     // resell all  Report
-    app.post("/ResellAllReport", async (req, res) => {
+    app.get("/ResellAllReport", async (req, res) => {
       const query = {};
-      // console.log(query);
+      console.log(query);
       const result = await furnitureResellingReport.find(query).toArray();
       res.send(result);
     });
