@@ -49,10 +49,6 @@ async function mongodbConnect() {
       .db("furnitureResell")
       .collection("ResellAllUser");
 
-    // const user = { name: "abudl" };
-
-    // const box = furnitureResellingCategory.insertOne(user);
-
     // jwt token verify
 
     function verificationJWT(req, res, next) {
@@ -85,7 +81,7 @@ async function mongodbConnect() {
     app.get("/home/category/:category", async (req, res) => {
       const id = req.params.category;
       const query = { category: id };
-      console.log(query);
+      // console.log(query);
       const resellerAllCategory = await furnitureResellingProduct
         .find(query)
         .toArray();
@@ -107,11 +103,11 @@ async function mongodbConnect() {
         // resale_price: modalData.resale_price,
       };
 
-      console.log("data match", match);
+      // console.log("data match", match);
       const alreadyBooked = await furnitureResellingBooking
         .find(match)
         .toArray();
-      console.log("already add", alreadyBooked);
+      // console.log("already add", alreadyBooked);
 
       if (alreadyBooked.length) {
         const message = `You Already have a booking on ${match.user} `;
@@ -122,6 +118,7 @@ async function mongodbConnect() {
       // console.log("option", option);
       res.send(option);
     });
+
     // report
     app.post("/ReportData", async (req, res) => {
       const ReportData = req.body;
@@ -129,10 +126,10 @@ async function mongodbConnect() {
       // console.log(result);
       res.send(result);
     });
+
     // all user
     app.post("/allUser", async (req, res) => {
       const allUser = req.body;
-
       const result = await furnitureResellingAllUser.insertOne(allUser);
       // console.log(result);
       res.send(result);
@@ -142,12 +139,14 @@ async function mongodbConnect() {
     app.get("/ResellAllUser", verificationJWT, async (req, res) => {
       const query = {};
       const result = await furnitureResellingAllUser.find(query).toArray();
+
       res.send(result);
     });
 
     // resell all  Report
     app.get("/ResellAllReport", async (req, res) => {
       const query = {};
+      // console.log(query);
       const result = await furnitureResellingReport.find(query).toArray();
       res.send(result);
     });
@@ -174,9 +173,16 @@ async function mongodbConnect() {
 
     app.get("/emailForGetUser/:email", async (req, res) => {
       const email = req.params.email;
+
+      // const decodedEmail = req.decoded.email;
+      // console.log(decodedEmail);
+      // if (email !== decodedEmail) {
+      //   return res.status(403).send({ message: "forbidden access" });
+      // }
+
       const query = { email: email };
 
-      const booking = await furnitureResellingAllUser.find(query).toArray();
+      const booking = await furnitureResellingAllUser.findOne(query);
       // console.log(booking);
       res.send(booking);
     });
