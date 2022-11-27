@@ -3,6 +3,7 @@ const cors = require("cors");
 const app = express();
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 // mongodb
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -49,6 +50,11 @@ async function mongodbConnect() {
       .db("furnitureResell")
       .collection("ResellAllUser");
 
+    //all payment
+    const furnitureResellPayment = client
+      .db("furnitureResell")
+      .collection("ResellPayment");
+
     // jwt token verify
 
     function verificationJWT(req, res, next) {
@@ -86,6 +92,7 @@ async function mongodbConnect() {
       // console.log(query);
       const resellerAllCategory = await furnitureResellingProduct
         .find(query)
+        .sort({ _id: -1 })
         .toArray();
       res.send(resellerAllCategory);
     });
@@ -104,6 +111,7 @@ async function mongodbConnect() {
       // console.log("data match", match);
       const alreadyBooked = await furnitureResellingBooking
         .find(match)
+        .sort({ _id: -1 })
         .toArray();
       // console.log("already add", alreadyBooked);
 
@@ -120,7 +128,7 @@ async function mongodbConnect() {
     // report
     app.post("/ReportData", async (req, res) => {
       const ReportData = req.body;
-      console.log(ReportData);
+      // console.log(ReportData);
       const result = await furnitureResellingReport.insertOne(ReportData);
       // console.log(result);
       res.send(result);
@@ -169,17 +177,16 @@ async function mongodbConnect() {
     //all seller
     app.get("/allSeller/:role", async (req, res) => {
       const email = req.params.role;
-      console.log(email);
+      // console.log(email);
       const query = { role: email };
       const result = await furnitureResellingAllUser.find(query).toArray();
-
       res.send(result);
     });
 
     // resell all  Report
     app.get("/ResellAllReport", async (req, res) => {
       const query = {};
-      console.log(query);
+      // console.log(query);
       const result = await furnitureResellingReport.find(query).toArray();
       res.send(result);
     });
@@ -219,12 +226,20 @@ async function mongodbConnect() {
       // console.log(booking);
       res.send(booking);
     });
-
+    // my booking delete
     app.get("/myBookingDelete/:id", async (req, res) => {
       const { id } = req.params;
       // console.log(id);
       const query = { _id: ObjectId(id) };
       const result = await furnitureResellingBooking.deleteOne(query);
+      res.send(result);
+    });
+    // my product delete
+    app.get("/myProductDelete/:id", async (req, res) => {
+      const { id } = req.params;
+      // console.log(id);
+      const query = { _id: ObjectId(id) };
+      const result = await furnitureResellingProduct.deleteOne(query);
       res.send(result);
     });
 
@@ -261,6 +276,92 @@ async function mongodbConnect() {
       const product = req.body;
       // console.log(product);
       const result = await furnitureResellingProduct.insertOne(product);
+      res.send(result);
+    });
+
+    app.get("/MyProduct", async (req, res) => {
+      const email = req.query.email;
+      // console.log(email);
+      // const decodedEmail = req.decoded.email;
+
+      // if (email !== decodedEmail) {
+      //   return res.status(403).send({ message: "forbidden access" });
+      // }
+
+      const query = {
+        seller_email: email,
+      };
+
+      // console.log(query);
+      const booking = await furnitureResellingProduct.find(query).toArray();
+      // console.log(booking);
+      res.send(booking);
+    });
+
+    app.put("/verifyUser/:id", async (req, res) => {
+      const { id } = req.params;
+      // console.log(id);
+      const filter = { _id: ObjectId(id) };
+      const user = req.body;
+      // console.log(user);
+      const option = { upsert: true };
+      const updatedUser = {
+        $set: {
+          verifyUser: user.verifyUser,
+        },
+      };
+      const result = await furnitureResellingAllUser.updateOne(
+        filter,
+        updatedUser,
+        option
+      );
+      // console.log(result);
+      res.send(result);
+    });
+
+    app.get("/bookings/:id", async (req, res) => {
+      const { id } = req.params;
+      // console.log("1", id);
+      const query = { _id: ObjectId(id) };
+      // console.log("2", query);
+      const booking = await furnitureResellingBooking.findOne(query);
+      // console.log("hello", booking);
+      res.send(booking);
+    });
+
+    // paymnet gatway
+    app.post("/create-payment-intent", async (req, res) => {
+      const booking = req.body;
+      // console.log(booking);
+      const price = booking.resale_price;
+      const amount = price * 100;
+      // console.log(price);
+      const paymentIntent = await stripe.paymentIntents.create({
+        currency: "usd",
+        amount: amount,
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    app.post("/payments", async (req, res) => {
+      const payment = req.body;
+      console.log(payment);
+      const result = await furnitureResellPayment.insertOne(payment);
+      const id = payment.bookingId;
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transactionId,
+        },
+      };
+      const updateResult = await furnitureResellingBooking.updateOne(
+        filter,
+        updatedDoc
+      );
       res.send(result);
     });
   } finally {
