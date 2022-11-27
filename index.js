@@ -80,7 +80,9 @@ async function mongodbConnect() {
     // all furniture  data
     app.get("/home/category/:category", async (req, res) => {
       const id = req.params.category;
-      const query = { category: id };
+      const query = {
+        category_name: id,
+      };
       // console.log(query);
       const resellerAllCategory = await furnitureResellingProduct
         .find(query)
@@ -242,6 +244,24 @@ async function mongodbConnect() {
       }
       // console.log(user);
       res.status(403).send({ accessToken: "" });
+    });
+
+    app.get("/categoryOption", async (req, res) => {
+      const query = {};
+      const result = await furnitureResellingCategory
+        .find(query)
+        .project({
+          category_name: 1,
+        })
+        .toArray();
+      res.send(result);
+    });
+
+    app.post("/addSellerProduct", async (req, res) => {
+      const product = req.body;
+      // console.log(product);
+      const result = await furnitureResellingProduct.insertOne(product);
+      res.send(result);
     });
   } finally {
   }
