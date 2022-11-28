@@ -55,6 +55,11 @@ async function mongodbConnect() {
       .db("furnitureResell")
       .collection("ResellPayment");
 
+    //all advertising
+    const furnitureResellAdvertisingProduct = client
+      .db("furnitureResell")
+      .collection("ResellAdvertising");
+
     // jwt token verify
 
     function verificationJWT(req, res, next) {
@@ -126,7 +131,18 @@ async function mongodbConnect() {
     });
 
     // report
-    app.post("/ReportData", async (req, res) => {
+
+    app.delete("/allReportDelete/:id", async (req, res) => {
+      const { id } = req.params;
+      console.log(id);
+      const query = { _id: ObjectId(id) };
+      const result = await furnitureResellingReport.deleteOne(query);
+      console.log(result);
+      res.send(result);
+    });
+
+    // report delete
+    app.delete("/ReportData", async (req, res) => {
       const ReportData = req.body;
       // console.log(ReportData);
       const result = await furnitureResellingReport.insertOne(ReportData);
@@ -234,6 +250,16 @@ async function mongodbConnect() {
       const result = await furnitureResellingBooking.deleteOne(query);
       res.send(result);
     });
+
+    // all user delete
+    app.get("/allUserDelete/:id", async (req, res) => {
+      const { id } = req.params;
+      // console.log(id);
+      const query = { _id: ObjectId(id) };
+      const result = await furnitureResellingAllUser.deleteOne(query);
+      res.send(result);
+    });
+
     // my product delete
     app.get("/myProductDelete/:id", async (req, res) => {
       const { id } = req.params;
@@ -348,21 +374,69 @@ async function mongodbConnect() {
 
     app.post("/payments", async (req, res) => {
       const payment = req.body;
-      console.log(payment);
+      // console.log("1", payment);
       const result = await furnitureResellPayment.insertOne(payment);
-      const id = payment.bookingId;
-      const filter = { _id: ObjectId(id) };
+
+      const filter = {
+        picture: payment.picture,
+        name: payment.name,
+        resale_price: payment.resale_price,
+      };
       const updatedDoc = {
         $set: {
           paid: true,
           transactionId: payment.transactionId,
         },
       };
-      const updateResult = await furnitureResellingBooking.updateOne(
+      const updateBooking = await furnitureResellingBooking.updateOne(
         filter,
         updatedDoc
       );
+      // console.log("2", updateBooking);
+      const updateProduct = await furnitureResellingProduct.updateOne(
+        filter,
+        updatedDoc
+      );
+      // console.log("3", updateProduct);
       res.send(result);
+    });
+    // advertising section
+    app.post("/advertisingProduct", async (req, res) => {
+      const payment = req.body;
+
+      const query = {
+        picture: payment.picture,
+      };
+      const alreadyUser = await furnitureResellAdvertisingProduct.findOne(
+        query
+      );
+      if (alreadyUser) {
+        return res.send({ acknowledged: false });
+      }
+
+      const result = await furnitureResellAdvertisingProduct.insertOne(payment);
+      // console.log(result);
+      res.send(result);
+    });
+
+    app.get("/AllAdvertising", async (req, res) => {
+      const query = {};
+      // console.log(query);
+      const option = await furnitureResellAdvertisingProduct.find().toArray();
+      // console.log(option);
+      res.send(option);
+    });
+    app.delete("/AllAdvertisingDelete/:picture", async (req, res) => {
+      const originalPrice = req.params.picture;
+      // console.log("1", originalPrice);
+      const query = {
+        resale_price: originalPrice,
+      };
+      // // console.log("2", query);
+      const booking = await furnitureResellAdvertisingProduct.deleteOne(query);
+      // console.log("hello", booking);
+      // console.log(booking);
+      res.send(booking);
     });
   } finally {
   }
