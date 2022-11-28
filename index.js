@@ -174,7 +174,7 @@ async function mongodbConnect() {
     });
 
     // resell all  User
-    app.get("/ResellAllUser", verificationJWT, async (req, res) => {
+    app.get("/ResellAllUser", async (req, res) => {
       const query = {};
       const result = await furnitureResellingAllUser.find(query).toArray();
 
