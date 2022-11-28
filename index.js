@@ -126,7 +126,7 @@ async function mongodbConnect() {
       }
 
       const option = await furnitureResellingBooking.insertOne(modalData);
-      // console.log("option", option);
+      console.log("option", option);
       res.send(option);
     });
 
@@ -134,15 +134,15 @@ async function mongodbConnect() {
 
     app.delete("/allReportDelete/:id", async (req, res) => {
       const { id } = req.params;
-      console.log(id);
+      // console.log(id);
       const query = { _id: ObjectId(id) };
       const result = await furnitureResellingReport.deleteOne(query);
-      console.log(result);
+      // console.log(result);
       res.send(result);
     });
 
     // report delete
-    app.delete("/ReportData", async (req, res) => {
+    app.post("/ReportData", async (req, res) => {
       const ReportData = req.body;
       // console.log(ReportData);
       const result = await furnitureResellingReport.insertOne(ReportData);
@@ -202,7 +202,7 @@ async function mongodbConnect() {
     // resell all  Report
     app.get("/ResellAllReport", async (req, res) => {
       const query = {};
-      // console.log(query);
+      console.log(query);
       const result = await furnitureResellingReport.find(query).toArray();
       res.send(result);
     });
