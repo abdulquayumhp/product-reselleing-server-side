@@ -7,11 +7,16 @@ const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 // mongodb
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const SSLCommerzPayment = require("sslcommerz-lts");
 
 app.use(cors());
 app.use(express.json());
 
 const port = process.env.port || 8000;
+
+const store_id = process.env.STORE_ID;
+const store_passwd = process.env.STORE_PASSWD;
+const is_live = false;
 
 // mongodb user
 const uri = `mongodb+srv://${process.env.DB_ADMIN_USER}:${process.env.DB_PASSWORD}@cluster0.wtn02jv.mongodb.net/?retryWrites=true&w=majority`;
@@ -126,7 +131,7 @@ async function mongodbConnect() {
       }
 
       const option = await furnitureResellingBooking.insertOne(modalData);
-      console.log("option", option);
+      // console.log("option", option);
       res.send(option);
     });
 
@@ -187,7 +192,6 @@ async function mongodbConnect() {
       // console.log(email);
       const query = { role: email };
       const result = await furnitureResellingAllUser.find(query).toArray();
-
       res.send(result);
     });
     //all seller
@@ -202,7 +206,7 @@ async function mongodbConnect() {
     // resell all  Report
     app.get("/ResellAllReport", async (req, res) => {
       const query = {};
-      console.log(query);
+      // console.log(query);
       const result = await furnitureResellingReport.find(query).toArray();
       res.send(result);
     });
@@ -211,8 +215,9 @@ async function mongodbConnect() {
 
     app.get("/MyBookings", verificationJWT, async (req, res) => {
       const email = req.query.email;
+      // console.log(email);
       const decodedEmail = req.decoded.email;
-
+      // console.log(decodedEmail);
       if (email !== decodedEmail) {
         return res.status(403).send({ message: "forbidden access" });
       }
@@ -374,7 +379,7 @@ async function mongodbConnect() {
 
     app.post("/payments", async (req, res) => {
       const payment = req.body;
-      // console.log("1", payment);
+      console.log("1", payment);
       const result = await furnitureResellPayment.insertOne(payment);
 
       const filter = {
@@ -392,13 +397,14 @@ async function mongodbConnect() {
         filter,
         updatedDoc
       );
-      // console.log("2", updateBooking);
+      console.log("2", updateBooking);
       const updateProduct = await furnitureResellingProduct.updateOne(
         filter,
         updatedDoc
       );
-      // console.log("3", updateProduct);
+      console.log("3", updateProduct);
       res.send(result);
+      console.log(result);
     });
     // advertising section
     app.post("/advertisingProduct", async (req, res) => {
@@ -426,6 +432,7 @@ async function mongodbConnect() {
       // console.log(option);
       res.send(option);
     });
+
     app.delete("/AllAdvertisingDelete/:picture", async (req, res) => {
       const originalPrice = req.params.picture;
       // console.log("1", originalPrice);
@@ -437,6 +444,100 @@ async function mongodbConnect() {
       // console.log("hello", booking);
       // console.log(booking);
       res.send(booking);
+    });
+
+    // bd payment system
+    app.post("/payment", async (req, res) => {
+      const payment = req.body;
+      // console.log(payment);
+      const orderProduct = await furnitureResellingBooking.findOne({
+        _id: ObjectId(payment.service),
+      });
+      // console.log("he", orderProduct);
+      const transactionId = new ObjectId().toString();
+      const data = {
+        total_amount: orderProduct.resale_price,
+        currency: payment.currency,
+        tran_id: transactionId, // use unique tran_id for each api call
+        success_url: `${process.env.SERVER_URL}/payment/success?transactionId=${transactionId}`,
+        fail_url: `${process.env.SERVER_URL}/payment/fail?transactionId=${transactionId}`,
+        cancel_url: `${process.env.SERVER_URL}/payment/cancel`,
+        ipn_url: `${process.env.SERVER_URL}/ipn`,
+        shipping_method: "Courier",
+        product_name: "Computer.",
+        product_category: "Electronic",
+        product_profile: "general",
+        cus_name: payment.paymentPerson,
+        cus_email: payment.email,
+        cus_add1: payment.address,
+        cus_add2: "Dhaka",
+        cus_city: "Dhaka",
+        cus_state: "Dhaka",
+        cus_postcode: "1000",
+        cus_country: "Bangladesh",
+        cus_phone: "01711111111",
+        cus_fax: "01711111111",
+        ship_name: "Customer Name",
+        ship_add1: "Dhaka",
+        ship_add2: "Dhaka",
+        ship_city: "Dhaka",
+        ship_state: "Dhaka",
+        ship_postcode: payment.postCode,
+        ship_country: "Bangladesh",
+      };
+
+      // console.log(data);
+
+      const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
+      sslcz.init(data).then((apiResponse) => {
+        // Redirect the user to payment gateway
+        let GatewayPageURL = apiResponse.GatewayPageURL;
+        furnitureResellPayment.insertOne({
+          ...payment,
+          price: orderProduct.resale_price,
+          transactionId,
+          paid: false,
+        });
+        res.send({ url: GatewayPageURL });
+      });
+    });
+
+    app.post("/payment/success", async (req, res) => {
+      const { transactionId } = req.query;
+      // console.log(transactionId);
+      if (!transactionId) {
+        return res.redirect(`${process.env.CLIENT_URL}/dashboard/payment/fail`);
+      }
+      const result = await furnitureResellPayment.updateOne(
+        { transactionId },
+        { $set: { paid: true, paidAt: new Date() } }
+      );
+      if (result.modifiedCount > 0) {
+        res.redirect(
+          `${process.env.CLIENT_URL}/dashboard/payment/success?transectionId=${transactionId}`
+        );
+      }
+    });
+
+    app.get("/payment/byTransactionId/:id", async (req, res) => {
+      const { id } = req.params;
+      console.log(id);
+      const result = await furnitureResellPayment.findOne({
+        transactionId: id,
+      });
+      console.log(result);
+      res.send(result);
+    });
+
+    app.post("/payment/fail", async (req, res) => {
+      const { transactionId } = req.query;
+      if (!transactionId) {
+        return res.redirect(`${process.env.CLIENT_URL}/dashboard/payment/fail`);
+      }
+      const result = await furnitureResellPayment.deleteOne({ transactionId });
+      if (result.deletedCount) {
+        res.redirect(`${process.env.CLIENT_URL}/dashboard/payment/fail`);
+      }
     });
   } finally {
   }
